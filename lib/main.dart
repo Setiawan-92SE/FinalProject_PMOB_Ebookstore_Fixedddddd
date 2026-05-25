@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/book_list_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:responsive_framework/responsive_framework.dart';
+import 'screens/welcome_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,91 +20,32 @@ class EBookStoreApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'E-BookStore',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFFB8973A),
-          surface: const Color(0xFF1A1A1A),
-          background: const Color(0xFF0F0F0F),
+    return ScreenUtilInit(
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) => MaterialApp(
+        title: 'E-BookStore',
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) => ResponsiveBreakpoints.builder(
+          child: child!,
+          breakpoints: [
+            const Breakpoint(start: 0, end: 360, name: MOBILE),
+            const Breakpoint(start: 361, end: 600, name: TABLET),
+            const Breakpoint(start: 601, end: 840, name: DESKTOP),
+          ],
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
-        useMaterial3: true,
-      ),
-      home: const MainScreen(),
-    );
-  }
-}
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = const [
-    BookListScreen(),
-    // Tambahkan screen lain (Beranda, Keranjang, dll) sesuai kebutuhan
-    _PlaceholderScreen(label: 'Beranda'),
-    _PlaceholderScreen(label: 'Keranjang'),
-    _PlaceholderScreen(label: 'Profil'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF0F0F0F),
-        indicatorColor: const Color(0xFFB8973A).withOpacity(0.2),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book, color: Color(0xFFB8973A)),
-            label: 'Katalog',
+        theme: ThemeData(
+          colorScheme: ColorScheme.dark(
+            primary: const Color(0xFFB8973A),
+            surface: const Color(0xFF1A1A1A),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: Color(0xFFB8973A)),
-            label: 'Beranda',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart, color: Color(0xFFB8973A)),
-            label: 'Keranjang',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: Color(0xFFB8973A)),
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String label;
-  const _PlaceholderScreen({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      body: Center(
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white54, fontSize: 18),
+          scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+          useMaterial3: true,
         ),
+        home: child,
       ),
+      child: const WelcomeScreen(),
     );
   }
 }

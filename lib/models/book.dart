@@ -1,3 +1,5 @@
+/// Model Book — dengan field status (pending/approved/rejected) dan sellerId
+/// Path: lib/models/book.dart
 class Book {
   int? id;
   String judul;
@@ -7,6 +9,8 @@ class Book {
   String deskripsi;
   String? coverUrl;
   int stok;
+  String status; // 'pending' | 'approved' | 'rejected'
+  int? sellerId; // id seller yang mengajukan buku
 
   Book({
     this.id,
@@ -17,9 +21,10 @@ class Book {
     required this.deskripsi,
     this.coverUrl,
     this.stok = 0,
+    this.status = 'approved', // seed data langsung approved
+    this.sellerId,
   });
 
-  // Konversi dari Map (hasil query Cursor) ke objek Book
   factory Book.fromMap(Map<String, dynamic> map) {
     return Book(
       id: map['id'],
@@ -30,10 +35,11 @@ class Book {
       deskripsi: map['deskripsi'] ?? '',
       coverUrl: map['cover_url'],
       stok: map['stok'] ?? 0,
+      status: map['status'] ?? 'approved',
+      sellerId: map['seller_id'],
     );
   }
 
-  // Konversi dari objek Book ke Map (untuk Insert/Update)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -44,10 +50,11 @@ class Book {
       'deskripsi': deskripsi,
       'cover_url': coverUrl,
       'stok': stok,
+      'status': status,
+      'seller_id': sellerId,
     };
   }
 
-  // Copy with untuk update sebagian field
   Book copyWith({
     int? id,
     String? judul,
@@ -57,6 +64,8 @@ class Book {
     String? deskripsi,
     String? coverUrl,
     int? stok,
+    String? status,
+    int? sellerId,
   }) {
     return Book(
       id: id ?? this.id,
@@ -67,12 +76,12 @@ class Book {
       deskripsi: deskripsi ?? this.deskripsi,
       coverUrl: coverUrl ?? this.coverUrl,
       stok: stok ?? this.stok,
+      status: status ?? this.status,
+      sellerId: sellerId ?? this.sellerId,
     );
   }
 
   @override
-  String toString() {
-    return 'Book{id: $id, judul: $judul, penulis: $penulis, '
-        'kategori: $kategori, harga: $harga, stok: $stok}';
-  }
+  String toString() =>
+      'Book{id: $id, judul: $judul, status: $status, sellerId: $sellerId}';
 }

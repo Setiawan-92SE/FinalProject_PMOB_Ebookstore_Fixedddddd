@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
-import 'package:ebookstore/database/database.helper.dart';
+import '../viewmodels/book_list_viewmodel.dart';
 import 'book_form_screen.dart';
 import 'book_detail_screen.dart';
 
@@ -14,13 +14,8 @@ class BookListScreen extends StatefulWidget {
 }
 
 class _BookListScreenState extends State<BookListScreen> {
-  final _dbHelper = DatabaseHelper();
+  final _viewModel = BookListViewModel();
   final _searchCtrl = TextEditingController();
-
-  List<Book> _books = [];
-  List<Book> _filteredBooks = [];
-  bool _isLoading = true;
-  String _selectedKategori = 'Semua';
 
   final List<String> _kategoriFilter = [
     'Semua',
@@ -37,46 +32,14 @@ class _BookListScreenState extends State<BookListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBooks();
+    _viewModel.loadBooks();
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _viewModel.dispose();
     super.dispose();
-  }
-
-  // ─── Load semua buku (getReadableDatabase + Query) ────────────────────────
-  Future<void> _loadBooks() async {
-    setState(() => _isLoading = true);
-    try {
-      // Query — mengambil data dari database (Cursor)
-      final books = await _dbHelper.getAllBooks();
-      setState(() {
-        _books = books;
-        _applyFilter();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showSnackBar('Gagal memuat data: $e', isSuccess: false);
-    }
-  }
-
-  // ─── Filter & Search ──────────────────────────────────────────────────────
-  void _applyFilter() {
-    final keyword = _searchCtrl.text.toLowerCase().trim();
-    setState(() {
-      _filteredBooks = _books.where((book) {
-        final matchKategori =
-            _selectedKategori == 'Semua' || book.kategori == _selectedKategori;
-        final matchSearch =
-            keyword.isEmpty ||
-            book.judul.toLowerCase().contains(keyword) ||
-            book.penulis.toLowerCase().contains(keyword);
-        return matchKategori && matchSearch;
-      }).toList();
-    });
   }
 
   // ─── Navigasi ke form Tambah ──────────────────────────────────────────────
@@ -85,7 +48,7 @@ class _BookListScreenState extends State<BookListScreen> {
       context,
       MaterialPageRoute(builder: (_) => const BookFormScreen()),
     );
-    if (result == true) _loadBooks(); // Refresh setelah insert
+    if (result == true) _viewModel.loadBooks();
   }
 
   // ─── Navigasi ke form Ubah ────────────────────────────────────────────────
@@ -94,7 +57,7 @@ class _BookListScreenState extends State<BookListScreen> {
       context,
       MaterialPageRoute(builder: (_) => BookFormScreen(book: book)),
     );
-    if (result == true) _loadBooks(); // Refresh setelah update/delete
+    if (result == true) _viewModel.loadBooks();
   }
 
   // ─── Hapus cepat via swipe ────────────────────────────────────────────────
@@ -124,12 +87,8 @@ class _BookListScreenState extends State<BookListScreen> {
 
     if (konfirmasi != true) return;
 
-    // DELETE — menghapus baris dari database
-    final result = await _dbHelper.deleteBook(book.id!);
-    if (result > 0) {
-      _showSnackBar('Buku dihapus!', isSuccess: true);
-      _loadBooks();
-    }
+    await _viewModel.deleteBook(book);
+    _showSnackBar('Buku dihapus!', isSuccess: true);
   }
 
   void _showSnackBar(String msg, {required bool isSuccess}) {
@@ -145,30 +104,38 @@ class _BookListScreenState extends State<BookListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          _buildSliverAppBar(),
-        ],
-        body: Column(
-          children: [
-            _buildSearchBar(),
-            _buildKategoriFilter(),
-            Expanded(child: _buildBookList()),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _tambahBuku,
-        backgroundColor: const Color(0xFFB8973A),
-        foregroundColor: Colors.black,
-        icon: const Icon(Icons.add),
-        label: const Text(
-          'Tambah Buku',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: const Color(0xFF0F0F0F),
+          body: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              _buildSliverAppBar(),
+            ],
+            body: LayoutBuilder(
+              builder: (context, constraints) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSearchBar(),
+                  _buildKategoriFilter(),
+                  Expanded(child: _buildBookList()),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _tambahBuku,
+            backgroundColor: const Color(0xFFB8973A),
+            foregroundColor: Colors.black,
+            icon: const Icon(Icons.add),
+            label: const Text(
+              'Tambah Buku',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -205,7 +172,7 @@ class _BookListScreenState extends State<BookListScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         controller: _searchCtrl,
-        onChanged: (_) => _applyFilter(),
+        onChanged: (v) => _viewModel.setSearchKeyword(v),
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Cari judul buku atau penulis...',
@@ -216,7 +183,7 @@ class _BookListScreenState extends State<BookListScreen> {
                   icon: const Icon(Icons.clear, color: Colors.white38),
                   onPressed: () {
                     _searchCtrl.clear();
-                    _applyFilter();
+                    _viewModel.setSearchKeyword('');
                   },
                 )
               : null,
@@ -245,7 +212,7 @@ class _BookListScreenState extends State<BookListScreen> {
         itemCount: _kategoriFilter.length,
         itemBuilder: (context, index) {
           final kategori = _kategoriFilter[index];
-          final isSelected = _selectedKategori == kategori;
+          final isSelected = _viewModel.selectedKategori == kategori;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: FilterChip(
@@ -258,10 +225,7 @@ class _BookListScreenState extends State<BookListScreen> {
                 ),
               ),
               selected: isSelected,
-              onSelected: (_) {
-                setState(() => _selectedKategori = kategori);
-                _applyFilter();
-              },
+              onSelected: (_) => _viewModel.setSelectedKategori(kategori),
               backgroundColor: const Color(0xFF1E1E1E),
               selectedColor: const Color(0xFFB8973A),
               checkmarkColor: Colors.black,
@@ -274,13 +238,13 @@ class _BookListScreenState extends State<BookListScreen> {
   }
 
   Widget _buildBookList() {
-    if (_isLoading) {
+    if (_viewModel.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFB8973A)),
       );
     }
 
-    if (_filteredBooks.isEmpty) {
+    if (_viewModel.filteredBooks.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -292,7 +256,7 @@ class _BookListScreenState extends State<BookListScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              _books.isEmpty
+              _viewModel.books.isEmpty
                   ? 'Belum ada buku.\nTambahkan buku pertama Anda!'
                   : 'Tidak ada hasil untuk pencarian ini.',
               textAlign: TextAlign.center,
@@ -304,13 +268,13 @@ class _BookListScreenState extends State<BookListScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadBooks,
+      onRefresh: _viewModel.loadBooks,
       color: const Color(0xFFB8973A),
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        itemCount: _filteredBooks.length,
+        itemCount: _viewModel.filteredBooks.length,
         itemBuilder: (context, index) {
-          return _buildBookCard(_filteredBooks[index]);
+          return _buildBookCard(_viewModel.filteredBooks[index]);
         },
       ),
     );
@@ -338,13 +302,13 @@ class _BookListScreenState extends State<BookListScreen> {
       ),
       confirmDismiss: (_) async {
         await _hapusBuku(book);
-        return false; // Handled manually via _loadBooks()
+        return false;
       },
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => BookDetailScreen(book: book, onUpdate: _loadBooks),
+            builder: (_) => BookDetailScreen(book: book, onUpdate: _viewModel.loadBooks),
           ),
         ),
         child: Container(

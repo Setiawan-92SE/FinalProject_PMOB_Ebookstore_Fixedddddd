@@ -1,0 +1,53 @@
+import 'package:flutter/foundation.dart';
+import '../../repositories/order_repository.dart';
+import '../../models/user.dart';
+
+class SellerOrdersViewModel extends ChangeNotifier {
+  final OrderRepository _orderRepo = OrderRepository();
+
+  List<Map<String, dynamic>> _allOrders = [];
+  List<Map<String, dynamic>> _filtered = [];
+  List<Map<String, dynamic>> get filtered => _filtered;
+
+  bool _loading = true;
+  bool get loading => _loading;
+
+  int _filterIdx = 0;
+  int get filterIdx => _filterIdx;
+
+  late User _currentUser;
+
+  void init(User user) {
+    _currentUser = user;
+  }
+
+  void setFilter(int index) {
+    _filterIdx = index;
+    _applyFilter();
+    notifyListeners();
+  }
+
+  Future<void> load() async {
+    _loading = true;
+    notifyListeners();
+
+    _allOrders = await _orderRepo.getBySeller(_currentUser.id!);
+    _applyFilter();
+    _loading = false;
+    notifyListeners();
+  }
+
+  void _applyFilter() {
+    if (_filterIdx == 0) {
+      _filtered = List.from(_allOrders);
+      return;
+    }
+    final statusMap = {1: 'pending', 2: 'diproses', 3: 'selesai', 4: 'dibatalkan'};
+    _filtered = _allOrders.where((o) => o['status'] == statusMap[_filterIdx]).toList();
+  }
+
+  Future<void> updateStatus(int orderId, String status) async {
+    await _orderRepo.updateStatus(orderId, status);
+    await load();
+  }
+}

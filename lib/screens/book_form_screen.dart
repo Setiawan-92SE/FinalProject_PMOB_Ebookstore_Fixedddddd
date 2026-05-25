@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/book.dart';
-import 'package:ebookstore/database/database.helper.dart';
+import '../viewmodels/book_form_viewmodel.dart';
 
 /// Layar Form Buku — digunakan untuk Tambah & Ubah data
 /// Setara dengan tampilan input di slide "Insert Data Baru" & "Ubah Data"
@@ -16,7 +16,7 @@ class BookFormScreen extends StatefulWidget {
 
 class _BookFormScreenState extends State<BookFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _dbHelper = DatabaseHelper();
+  final _viewModel = BookFormViewModel();
 
   // Controller untuk setiap field (setara EditText di Android)
   late TextEditingController _judulCtrl;
@@ -26,7 +26,6 @@ class _BookFormScreenState extends State<BookFormScreen> {
   late TextEditingController _stokCtrl;
 
   String _selectedKategori = 'Fiksi';
-  bool _isLoading = false;
 
   final List<String> _kategoriList = [
     'Fiksi',
@@ -66,6 +65,7 @@ class _BookFormScreenState extends State<BookFormScreen> {
     _hargaCtrl.dispose();
     _deskripsiCtrl.dispose();
     _stokCtrl.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
@@ -73,45 +73,33 @@ class _BookFormScreenState extends State<BookFormScreen> {
   Future<void> _simpanData() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final book = Book(
+      id: widget.book?.id,
+      judul: _judulCtrl.text.trim(),
+      penulis: _penulisCtrl.text.trim(),
+      kategori: _selectedKategori,
+      harga: double.parse(_hargaCtrl.text.trim()),
+      deskripsi: _deskripsiCtrl.text.trim(),
+      stok: int.parse(_stokCtrl.text.trim()),
+    );
 
-    try {
-      final book = Book(
-        id: widget.book?.id,
-        judul: _judulCtrl.text.trim(),
-        penulis: _penulisCtrl.text.trim(),
-        kategori: _selectedKategori,
-        harga: double.parse(_hargaCtrl.text.trim()),
-        deskripsi: _deskripsiCtrl.text.trim(),
-        stok: int.parse(_stokCtrl.text.trim()),
+    final success = await _viewModel.saveBook(book, _isEditMode);
+
+    if (!mounted) return;
+
+    if (success) {
+      _showSnackBar(
+        _isEditMode
+            ? 'Buku berhasil diperbarui!'
+            : 'Buku berhasil ditambahkan!',
+        isSuccess: true,
       );
-
-      int result;
-      if (_isEditMode) {
-        // UPDATE — memperbarui baris pada database
-        result = await _dbHelper.updateBook(book);
-      } else {
-        // INSERT — menambahkan baris ke database
-        result = await _dbHelper.insertBook(book);
-      }
-
-      if (!mounted) return;
-
-      if (result > 0) {
-        _showSnackBar(
-          _isEditMode
-              ? 'Buku berhasil diperbarui!'
-              : 'Buku berhasil ditambahkan!',
-          isSuccess: true,
-        );
-        Navigator.pop(context, true); // Kembalikan true = ada perubahan
-      } else {
-        _showSnackBar('Gagal menyimpan data.', isSuccess: false);
-      }
-    } catch (e) {
-      _showSnackBar('Error: $e', isSuccess: false);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      Navigator.pop(context, true);
+    } else {
+      _showSnackBar(
+        _viewModel.error ?? 'Gagal menyimpan data.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -142,19 +130,16 @@ class _BookFormScreenState extends State<BookFormScreen> {
 
     if (konfirmasi != true || !mounted) return;
 
-    setState(() => _isLoading = true);
-    try {
-      // DELETE — menghapus baris dari database
-      final result = await _dbHelper.deleteBook(widget.book!.id!);
-      if (!mounted) return;
-      if (result > 0) {
-        _showSnackBar('Buku berhasil dihapus!', isSuccess: true);
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      _showSnackBar('Gagal menghapus: $e', isSuccess: false);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    final success = await _viewModel.deleteBook(widget.book!.id!);
+    if (!mounted) return;
+    if (success) {
+      _showSnackBar('Buku berhasil dihapus!', isSuccess: true);
+      Navigator.pop(context, true);
+    } else {
+      _showSnackBar(
+        _viewModel.error ?? 'Gagal menghapus buku.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -171,147 +156,153 @@ class _BookFormScreenState extends State<BookFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F0F),
-        foregroundColor: Colors.white,
-        title: Text(
-          _isEditMode ? 'Ubah Buku' : 'Tambah Buku',
-          style: const TextStyle(
-            fontFamily: 'serif',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          if (_isEditMode)
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: _isLoading ? null : _hapusData,
-              tooltip: 'Hapus Buku',
-            ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFB8973A)),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Judul Buku'),
-                    _buildTextField(
-                      controller: _judulCtrl,
-                      hint: 'Masukkan judul buku',
-                      validator: (v) => v!.isEmpty ? 'Judul wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('Nama Penulis'),
-                    _buildTextField(
-                      controller: _penulisCtrl,
-                      hint: 'Masukkan nama penulis',
-                      validator: (v) =>
-                          v!.isEmpty ? 'Penulis wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('Kategori'),
-                    _buildDropdown(),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('Harga (Rp)'),
-                    _buildTextField(
-                      controller: _hargaCtrl,
-                      hint: 'Contoh: 85000',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) {
-                        if (v!.isEmpty) return 'Harga wajib diisi';
-                        if (double.tryParse(v) == null)
-                          return 'Harga tidak valid';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('Stok'),
-                    _buildTextField(
-                      controller: _stokCtrl,
-                      hint: 'Jumlah stok tersedia',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) => v!.isEmpty ? 'Stok wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('Deskripsi'),
-                    _buildTextField(
-                      controller: _deskripsiCtrl,
-                      hint: 'Deskripsi singkat buku...',
-                      maxLines: 4,
-                      validator: (v) =>
-                          v!.isEmpty ? 'Deskripsi wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Tombol Simpan / Ubah
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _simpanData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFB8973A),
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Text(
-                          _isEditMode ? 'UBAH' : 'SIMPAN',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Tombol Batal
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white30),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          'BATAL',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: const Color(0xFF0F0F0F),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF0F0F0F),
+            foregroundColor: Colors.white,
+            title: Text(
+              _isEditMode ? 'Ubah Buku' : 'Tambah Buku',
+              style: const TextStyle(
+                fontFamily: 'serif',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            actions: [
+              if (_isEditMode)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: _viewModel.isLoading ? null : _hapusData,
+                  tooltip: 'Hapus Buku',
+                ),
+            ],
+          ),
+          body: _viewModel.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFB8973A)),
+                )
+              : SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Judul Buku'),
+                        _buildTextField(
+                          controller: _judulCtrl,
+                          hint: 'Masukkan judul buku',
+                          validator: (v) => v!.isEmpty ? 'Judul wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildLabel('Nama Penulis'),
+                        _buildTextField(
+                          controller: _penulisCtrl,
+                          hint: 'Masukkan nama penulis',
+                          validator: (v) =>
+                              v!.isEmpty ? 'Penulis wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildLabel('Kategori'),
+                        _buildDropdown(),
+                        const SizedBox(height: 16),
+
+                        _buildLabel('Harga (Rp)'),
+                        _buildTextField(
+                          controller: _hargaCtrl,
+                          hint: 'Contoh: 85000',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          validator: (v) {
+                            if (v!.isEmpty) return 'Harga wajib diisi';
+                            if (double.tryParse(v) == null)
+                              return 'Harga tidak valid';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildLabel('Stok'),
+                        _buildTextField(
+                          controller: _stokCtrl,
+                          hint: 'Jumlah stok tersedia',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          validator: (v) => v!.isEmpty ? 'Stok wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildLabel('Deskripsi'),
+                        _buildTextField(
+                          controller: _deskripsiCtrl,
+                          hint: 'Deskripsi singkat buku...',
+                          maxLines: 4,
+                          validator: (v) =>
+                              v!.isEmpty ? 'Deskripsi wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Tombol Simpan / Ubah
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _simpanData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFB8973A),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              _isEditMode ? 'UBAH' : 'SIMPAN',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Tombol Batal
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white30),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              'BATAL',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                      ],
+                    ),
+                  ),
+                ),
+        );
+      },
     );
   }
 
