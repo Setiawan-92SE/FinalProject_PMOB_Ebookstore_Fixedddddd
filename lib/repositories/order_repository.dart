@@ -10,4 +10,6 @@ class OrderRepository {
   Future<int> updateStatus(int orderId, String status) => _db.updateOrderStatus(orderId, status);
   Future<int> updatePaymentStatus(int orderId, String paymentStatus) => _db.updatePaymentStatus(orderId, paymentStatus);
   Future<int> updatePaymentAndStatus(int orderId, String paymentStatus, String status) => _db.updatePaymentAndStatus(orderId, paymentStatus, status);
+  Future<List<Map<String, dynamic>>> getMonthlyRevenueAll() => _db.getMonthlyRevenueAll();
+  Future<List<Map<String, dynamic>>> getMonthlyRevenueBySeller(int sellerId) => _db.getMonthlyRevenueBySeller(sellerId);
 }

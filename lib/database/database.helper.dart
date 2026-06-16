@@ -564,6 +564,33 @@ class DatabaseHelper {
     };
   }
 
+  Future<List<Map<String, dynamic>>> getMonthlyRevenueAll() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT CAST(strftime('%m', created_at) AS INTEGER) as month,
+             CAST(strftime('%Y', created_at) AS INTEGER) as year,
+             CAST(SUM(total) AS INTEGER) as total
+      FROM $tableOrders
+      WHERE status = 'selesai'
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY year ASC, month ASC
+    ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getMonthlyRevenueBySeller(int sellerId) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT CAST(strftime('%m', created_at) AS INTEGER) as month,
+             CAST(strftime('%Y', created_at) AS INTEGER) as year,
+             CAST(SUM(total) AS INTEGER) as total
+      FROM $tableOrders o
+      INNER JOIN $tableBooks b ON o.book_id = b.id
+      WHERE b.seller_id = ? AND o.status = 'selesai'
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY year ASC, month ASC
+    ''', [sellerId]);
+  }
+
   Future<void> closeDatabase() async {
     if (_database != null) {
       await _database!.close();

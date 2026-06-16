@@ -15,19 +15,11 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _viewModel = AdminDashboardViewModel();
 
-  final List<_ChartBar> _monthlyRevenue = const [
-    _ChartBar('Jan', 850000),
-    _ChartBar('Feb', 1200000),
-    _ChartBar('Mar', 980000),
-    _ChartBar('Apr', 1450000),
-    _ChartBar('Mei', 1750000),
-    _ChartBar('Jun', 1100000),
-  ];
-
   @override
   void initState() {
     super.initState();
     _viewModel.load();
+    _viewModel.startAutoRefresh();
   }
 
   @override
@@ -143,7 +135,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       // ── Grafik Bar ─────────────────────────────────────────
                       const _SectionLabel('Pendapatan 6 Bulan Terakhir'),
                       SizedBox(height: 12.h),
-                      _BarChart(bars: _monthlyRevenue),
+                      _BarChart(bars: _viewModel.monthlyRevenue
+                          .map((m) => _ChartBar(m['label'] as String, m['total'] as int))
+                          .toList()),
                       SizedBox(height: 24.h),
 
                       // ── User breakdown ─────────────────────────────────────

@@ -20,6 +20,7 @@ class _SellerRevenueScreenState extends State<SellerRevenueScreen> {
     _viewModel.init(widget.currentUser);
     _viewModel.addListener(_onViewModelChanged);
     _viewModel.load();
+    _viewModel.startAutoRefresh();
   }
 
   void _onViewModelChanged() {
@@ -119,7 +120,7 @@ class _SellerRevenueScreenState extends State<SellerRevenueScreen> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600)),
                           const SizedBox(height: 12),
-                          _BarChart(),
+                          _BarChart(data: _viewModel.monthlyRevenue),
                           const SizedBox(height: 24),
                           // Transaction list
                           const Text('Riwayat Transaksi',
@@ -196,35 +197,49 @@ class _StatBox extends StatelessWidget {
 }
 
 class _BarChart extends StatelessWidget {
-  final _bars = const [
-    _Bar('Jan', 0.4),
-    _Bar('Feb', 0.65),
-    _Bar('Mar', 0.5),
-    _Bar('Apr', 0.8),
-    _Bar('Mei', 1.0),
-    _Bar('Jun', 0.7),
-  ];
+  final List<Map<String, dynamic>> data;
+  const _BarChart({required this.data});
+
+  String _fmtK(int v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}Jt';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}K';
+    return '$v';
+  }
+
   @override
-  Widget build(BuildContext context) => Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: const Color(0xFFB8973A).withValues(alpha: 0.12))),
-      child: Column(children: [
-        SizedBox(
-            height: 110,
-            child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: _bars
-                    .map((b) => Column(
+  Widget build(BuildContext context) {
+    final maxVal = data.map((d) => d['total'] as int).reduce((a, b) => a > b ? a : b);
+    return Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: const Color(0xFFB8973A).withValues(alpha: 0.12))),
+        child: Column(children: [
+          SizedBox(
+              height: 110,
+              child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: data
+                      .map((d) {
+                        final amount = d['total'] as int;
+                        final ratio = maxVal == 0 ? 0.0 : amount / maxVal;
+                        return Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
+                              if (amount > 0)
+                                Text(_fmtK(amount),
+                                    style: const TextStyle(
+                                        color: Color(0xFFB8973A),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600)),
+                              if (amount > 0)
+                                const SizedBox(height: 4),
                               Container(
                                   width: 28,
-                                  height: 90 * b.ratio,
+                                  height: 90 * ratio.clamp(0.02, 1.0),
                                   decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                           begin: Alignment.bottomCenter,
@@ -234,24 +249,20 @@ class _BarChart extends StatelessWidget {
                                             Color(0xFFD4B85A)
                                           ]),
                                       borderRadius: BorderRadius.circular(5))),
-                            ]))
-                    .toList())),
-        const SizedBox(height: 8),
-        Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _bars
-                .map((b) => Text(b.label,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 11)))
-                .toList()),
-      ]));
-}
-
-class _Bar {
-  final String label;
-  final double ratio;
-  const _Bar(this.label, this.ratio);
+                            ]);
+                      })
+                      .toList())),
+          const SizedBox(height: 8),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: data
+                  .map((d) => Text(d['label'] as String,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11)))
+                  .toList()),
+        ]));
+  }
 }
 
 class _TransactionTile extends StatelessWidget {
