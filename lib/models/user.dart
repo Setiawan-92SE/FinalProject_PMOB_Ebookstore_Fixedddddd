@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /// Model User
 /// Path: lib/models/user.dart
 class User {
@@ -57,3 +58,44 @@ class User {
   @override
   String toString() => 'User{id:$id, nama:$nama, role:$role}';
 }
+=======
+class User {
+  int? id;
+  String name;
+  String email;
+  String password;
+  String role;
+  String createdAt;
+
+  User({
+    this.id,
+    required this.name,
+    required this.email,
+    required this.password,
+    required this.role,
+    this.createdAt = '',
+  });
+
+  factory User.fromMap(Map<String, dynamic> map) {
+    return User(
+      id: map['id'],
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+      password: map['password'] ?? '',
+      role: map['role'] ?? '',
+      createdAt: map['created_at'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'password': password,
+      'role': role,
+      'created_at': createdAt,
+    };
+  }
+}
+>>>>>>> 6b0f76a63e881777dd2f8c012d8f63eb38c702eb

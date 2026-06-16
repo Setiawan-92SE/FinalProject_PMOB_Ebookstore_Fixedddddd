@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'screens/start_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,18 @@ class EBookStoreApp extends StatelessWidget {
         home: child,
       ),
       child: const StartScreen(),
+    return MaterialApp(
+      title: 'E-BookStore',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.dark(
+          primary: const Color(0xFFB8973A),
+          surface: const Color(0xFF1A1A1A),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+        useMaterial3: true,
+      ),
+      home: const WelcomeScreen(),
     );
   }
 }
