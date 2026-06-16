@@ -19,21 +19,28 @@ class SellerMainScreen extends StatefulWidget {
 
 class _SellerMainScreenState extends State<SellerMainScreen> {
   int _idx = 0;
-  late final List<Widget> _screens;
+  int _ordersRefreshKey = 0;
+  late List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      SellerBookListScreen(currentUser: widget.currentUser),
-      SellerOrdersScreen(currentUser: widget.currentUser),
-      SellerRevenueScreen(currentUser: widget.currentUser),
-      SellerProfileScreen(currentUser: widget.currentUser),
-    ];
+    _buildScreens();
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
+  }
+
+  void _buildScreens() {
+    _screens = [
+      SellerBookListScreen(currentUser: widget.currentUser),
+      SellerOrdersScreen(
+          key: ValueKey('orders_$_ordersRefreshKey'),
+          currentUser: widget.currentUser),
+      SellerRevenueScreen(currentUser: widget.currentUser),
+      SellerProfileScreen(currentUser: widget.currentUser),
+    ];
   }
 
   void _showLogoutDialog() {
@@ -111,7 +118,15 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
         backgroundColor: const Color(0xFF0F0F0F),
         indicatorColor: const Color(0xFFB8973A).withValues(alpha: 0.2),
         selectedIndex: _idx,
-        onDestinationSelected: (i) => setState(() => _idx = i),
+        onDestinationSelected: (i) {
+          setState(() {
+            if (i == 1) {
+              _ordersRefreshKey++;
+              _buildScreens();
+            }
+            _idx = i;
+          });
+        },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

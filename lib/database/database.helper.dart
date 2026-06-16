@@ -13,7 +13,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'ebookstore.db';
-  static const int _dbVersion = 3;
+  static const int _dbVersion = 5;
 
   // Tables
   static const String tableBooks = 'books';
@@ -48,8 +48,8 @@ class DatabaseHelper {
       tableOrders,
       tableCart,
       tableWishlist,
-      tableUsers,
       tableBooks,
+      tableUsers,
       tableCategories
     ]) {
       await db.execute('DROP TABLE IF EXISTS $t');
@@ -63,31 +63,49 @@ class DatabaseHelper {
       id INTEGER PRIMARY KEY AUTOINCREMENT, nama TEXT NOT NULL UNIQUE,
       deskripsi TEXT, is_active INTEGER NOT NULL DEFAULT 1)''');
 
-    await db.execute('''CREATE TABLE $tableBooks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, judul TEXT NOT NULL,
-      penulis TEXT NOT NULL, kategori TEXT NOT NULL, harga REAL NOT NULL DEFAULT 0,
-      deskripsi TEXT NOT NULL, cover_url TEXT, stok INTEGER NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'pending', seller_id INTEGER)''');
-
     await db.execute('''CREATE TABLE $tableUsers (
       id INTEGER PRIMARY KEY AUTOINCREMENT, nama TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE, phone TEXT NOT NULL, password TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'buyer', is_active INTEGER NOT NULL DEFAULT 1)''');
 
+    await db.execute('''CREATE TABLE $tableBooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, judul TEXT NOT NULL,
+      penulis TEXT NOT NULL, kategori TEXT NOT NULL, harga REAL NOT NULL DEFAULT 0,
+      deskripsi TEXT NOT NULL, cover_url TEXT, stok INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending', seller_id INTEGER,
+      FOREIGN KEY (kategori) REFERENCES $tableCategories(nama)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+      FOREIGN KEY (seller_id) REFERENCES $tableUsers(id)
+        ON DELETE SET NULL ON UPDATE CASCADE)''');
+
     await db.execute('''CREATE TABLE $tableWishlist (
       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
-      book_id INTEGER NOT NULL, UNIQUE(user_id, book_id))''');
+      book_id INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES $tableUsers(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (book_id) REFERENCES $tableBooks(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      UNIQUE(user_id, book_id))''');
 
     await db.execute('''CREATE TABLE $tableCart (
       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
       book_id INTEGER NOT NULL, qty INTEGER NOT NULL DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES $tableUsers(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (book_id) REFERENCES $tableBooks(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
       UNIQUE(user_id, book_id))''');
 
     await db.execute('''CREATE TABLE $tableOrders (
       id INTEGER PRIMARY KEY AUTOINCREMENT, buyer_id INTEGER NOT NULL,
       book_id INTEGER NOT NULL, qty INTEGER NOT NULL DEFAULT 1,
       total REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending',
-      created_at TEXT NOT NULL)''');
+      payment_status TEXT NOT NULL DEFAULT 'belum_bayar',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (buyer_id) REFERENCES $tableUsers(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+      FOREIGN KEY (book_id) REFERENCES $tableBooks(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE)''');
   }
 
   Future<void> _insertSeedData(Database db) async {
@@ -360,6 +378,12 @@ class DatabaseHelper {
         where: 'id = ?', whereArgs: [userId]);
   }
 
+  Future<int> updateUser(User user) async {
+    final db = await database;
+    return await db.update(tableUsers, user.toMap()..remove('id'),
+        where: 'id = ?', whereArgs: [user.id]);
+  }
+
   /// ✅ Hapus user (Admin)
   Future<int> deleteUser(int userId) async {
     final db = await database;
@@ -467,14 +491,28 @@ class DatabaseHelper {
       'qty': qty,
       'total': total,
       'status': 'pending',
+      'payment_status': 'belum_bayar',
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<int> updatePaymentStatus(int orderId, String paymentStatus) async {
+    final db = await database;
+    return await db.update(tableOrders, {'payment_status': paymentStatus},
+        where: 'id = ?', whereArgs: [orderId]);
+  }
+
+  Future<int> updatePaymentAndStatus(int orderId, String paymentStatus, String status) async {
+    final db = await database;
+    return await db.update(tableOrders, {'payment_status': paymentStatus, 'status': status},
+        where: 'id = ?', whereArgs: [orderId]);
   }
 
   Future<List<Map<String, dynamic>>> getOrdersByBuyer(int buyerId) async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT o.*, b.judul as book_judul FROM $tableOrders o
+      SELECT o.*, b.judul as book_judul, b.harga as book_harga, b.penulis as book_penulis
+      FROM $tableOrders o
       INNER JOIN $tableBooks b ON o.book_id = b.id
       WHERE o.buyer_id = ? ORDER BY o.created_at DESC''', [buyerId]);
   }
@@ -482,7 +520,8 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getOrdersBySeller(int sellerId) async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT o.*, b.judul as book_judul, u.nama as buyer_name
+      SELECT o.*, b.judul as book_judul, b.harga as book_harga, b.penulis as book_penulis,
+             u.nama as buyer_name, u.email as buyer_email, u.phone as buyer_phone
       FROM $tableOrders o
       INNER JOIN $tableBooks b ON o.book_id = b.id
       INNER JOIN $tableUsers u ON o.buyer_id = u.id

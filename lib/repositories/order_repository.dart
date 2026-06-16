@@ -8,4 +8,6 @@ class OrderRepository {
   Future<List<Map<String, dynamic>>> getBySeller(int sellerId) => _db.getOrdersBySeller(sellerId);
   Future<List<Map<String, dynamic>>> getAllAdmin({int limit = 20}) => _db.getAllOrdersAdmin(limit: limit);
   Future<int> updateStatus(int orderId, String status) => _db.updateOrderStatus(orderId, status);
+  Future<int> updatePaymentStatus(int orderId, String paymentStatus) => _db.updatePaymentStatus(orderId, paymentStatus);
+  Future<int> updatePaymentAndStatus(int orderId, String paymentStatus, String status) => _db.updatePaymentAndStatus(orderId, paymentStatus, status);
 }

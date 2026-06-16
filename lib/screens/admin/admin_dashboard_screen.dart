@@ -3,8 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../viewmodels/admin/admin_dashboard_viewmodel.dart';
 import '../../models/user.dart';
 
-/// AdminDashboardScreen — Laporan & Analitik Aplikasi
-/// Path: lib/screens/admin/admin_dashboard_screen.dart
+
 class AdminDashboardScreen extends StatefulWidget {
   final User currentUser;
   const AdminDashboardScreen({super.key, required this.currentUser});
@@ -16,7 +15,6 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _viewModel = AdminDashboardViewModel();
 
-  // Data dummy grafik bulanan (bisa diganti data nyata)
   final List<_ChartBar> _monthlyRevenue = const [
     _ChartBar('Jan', 850000),
     _ChartBar('Feb', 1200000),
@@ -582,8 +580,8 @@ class _RecentOrderTile extends StatelessWidget {
     switch (order['status']) {
       case 'pending':
         return Colors.orange;
-      case 'diproses':
-        return Colors.blue;
+      case 'dikonfirmasi':
+        return Colors.teal;
       case 'selesai':
         return Colors.green;
       case 'dibatalkan':

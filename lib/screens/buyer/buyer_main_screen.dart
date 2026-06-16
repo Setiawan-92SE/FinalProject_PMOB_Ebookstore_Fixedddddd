@@ -18,23 +18,30 @@ class BuyerMainScreen extends StatefulWidget {
 
 class _BuyerMainScreenState extends State<BuyerMainScreen> {
   int _idx = 0;
+  int _cartRefreshKey = 0;
 
-  late final List<Widget> _screens;
+  late List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
+    _buildScreens();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light));
+  }
+
+  void _buildScreens() {
     _screens = [
       BuyerHomeScreen(
           currentUser: widget.currentUser,
           onTabChange: (i) => setState(() => _idx = i)),
       BuyerCatalogScreen(currentUser: widget.currentUser),
-      BuyerCartScreen(currentUser: widget.currentUser),
+      BuyerCartScreen(
+          key: ValueKey('cart_$_cartRefreshKey'),
+          currentUser: widget.currentUser),
       BuyerProfileScreen(currentUser: widget.currentUser),
     ];
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light));
   }
 
   @override
@@ -45,7 +52,15 @@ class _BuyerMainScreenState extends State<BuyerMainScreen> {
         backgroundColor: const Color(0xFF0F0F0F),
         indicatorColor: const Color(0xFFB8973A).withValues(alpha: 0.2),
         selectedIndex: _idx,
-        onDestinationSelected: (i) => setState(() => _idx = i),
+        onDestinationSelected: (i) {
+          setState(() {
+            if (i == 2) {
+              _cartRefreshKey++;
+              _buildScreens();
+            }
+            _idx = i;
+          });
+        },
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),

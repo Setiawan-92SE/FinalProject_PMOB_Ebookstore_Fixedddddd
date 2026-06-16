@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../welcome_screen.dart';
+import '../shared/edit_profile_screen.dart';
+import '../shared/change_password_screen.dart';
+import '../shared/notifications_screen.dart';
+import '../shared/help_screen.dart';
+import '../shared/about_app_screen.dart';
 
 /// AdminProfileScreen — Profil Admin
 /// Path: lib/screens/admin/admin_profile_screen.dart
@@ -110,18 +115,27 @@ class AdminProfileScreen extends StatelessWidget {
             _MenuTile(
                 icon: Icons.person_outline,
                 label: 'Edit Profil',
-                onTap: () =>
-                    _snack(context, 'Fitur edit profil akan segera hadir')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(
+                            currentUser: currentUser)))),
             _MenuTile(
                 icon: Icons.lock_outline,
                 label: 'Ubah Password',
-                onTap: () =>
-                    _snack(context, 'Fitur ubah password akan segera hadir')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ChangePasswordScreen(
+                            currentUser: currentUser)))),
             _MenuTile(
                 icon: Icons.notifications_outlined,
                 label: 'Notifikasi',
-                onTap: () =>
-                    _snack(context, 'Fitur notifikasi akan segera hadir')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const NotificationsScreen(role: 'admin')))),
             const SizedBox(height: 20),
 
             const _MenuHeader('Lainnya'),
@@ -129,12 +143,19 @@ class AdminProfileScreen extends StatelessWidget {
             _MenuTile(
                 icon: Icons.help_outline,
                 label: 'Bantuan',
-                onTap: () =>
-                    _snack(context, 'Halaman bantuan akan segera hadir')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const HelpScreen(role: 'admin')))),
             _MenuTile(
                 icon: Icons.info_outline,
                 label: 'Tentang Aplikasi',
-                onTap: () => _showAbout(context)),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const AboutAppScreen(role: 'admin')))),
             const SizedBox(height: 8),
             _MenuTile(
               icon: Icons.logout,
@@ -149,41 +170,6 @@ class AdminProfileScreen extends StatelessWidget {
       ),
     );
   }
-
-  void _snack(BuildContext ctx, String msg) =>
-      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-        content: Text(msg),
-        backgroundColor: const Color(0xFF1A1A1A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ));
-
-  void _showAbout(BuildContext ctx) => showDialog(
-      context: ctx,
-      builder: (_) => AlertDialog(
-            backgroundColor: const Color(0xFF1A1A1A),
-            title: const Text('E-BookStore Admin',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-            content: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.auto_stories,
-                  color: Color(0xFFB8973A), size: 48),
-              const SizedBox(height: 12),
-              const Text('Versi 1.0.0',
-                  style: TextStyle(color: Colors.white70, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text('Platform manajemen E-BookStore.',
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-                  textAlign: TextAlign.center),
-            ]),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Tutup',
-                      style: TextStyle(color: Color(0xFFB8973A))))
-            ],
-          ));
 
   void _confirmLogout(BuildContext ctx) => showDialog(
       context: ctx,

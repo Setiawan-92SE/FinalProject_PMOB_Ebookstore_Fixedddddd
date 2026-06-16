@@ -31,15 +31,42 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
   }
 
   Future<void> _checkout() async {
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1A1A1A),
+              title: const Text('Konfirmasi Checkout',
+                  style: TextStyle(color: Colors.white)),
+              content: const Text(
+                  'Anda akan checkout semua item di keranjang. Lanjutkan?',
+                  style: TextStyle(color: Colors.white60)),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Batal',
+                        style: TextStyle(color: Colors.white54))),
+                ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFB8973A),
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8))),
+                    child: const Text('Checkout')),
+              ],
+            ));
+    if (ok != true) return;
     await _viewModel.checkout(widget.currentUser.id!);
     if (!mounted) return;
     showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF1A1A1A),
-              title: const Text('Pesanan Berhasil! 🎉',
+              title: const Text('Pesanan Berhasil!',
                   style: TextStyle(color: Colors.white)),
-              content: const Text('Pesanan Anda sedang diproses oleh seller.',
+              content: const Text(
+                  'Pesanan Anda telah dibuat.\nTunggu konfirmasi seller untuk melanjutkan pembayaran.',
                   style: TextStyle(color: Colors.white60)),
               actions: [
                 TextButton(

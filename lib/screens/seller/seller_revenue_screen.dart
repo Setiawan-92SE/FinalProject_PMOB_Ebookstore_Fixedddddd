@@ -262,8 +262,8 @@ class _TransactionTile extends StatelessWidget {
     switch (order['status']) {
       case 'selesai':
         return Colors.green;
-      case 'diproses':
-        return Colors.blue;
+      case 'dikonfirmasi':
+        return Colors.teal;
       case 'dibatalkan':
         return Colors.red;
       default:

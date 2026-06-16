@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../welcome_screen.dart';
 import 'buyer_wishlist_screen.dart';
+import 'buyer_orders_screen.dart';
+import '../shared/edit_profile_screen.dart';
+import '../shared/notifications_screen.dart';
+import '../shared/help_screen.dart';
 
 class BuyerProfileScreen extends StatelessWidget {
   final User currentUser;
@@ -60,7 +64,7 @@ class BuyerProfileScreen extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w600))),
             ])),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             const Text('Akun Saya',
                 style: TextStyle(
                     color: Colors.white60,
@@ -79,13 +83,27 @@ class BuyerProfileScreen extends StatelessWidget {
             _Tile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Riwayat Pesanan',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            BuyerOrdersScreen(currentUser: currentUser)))),
             _Tile(
-                icon: Icons.person_outline, label: 'Edit Profil', onTap: () {}),
+                icon: Icons.person_outline,
+                label: 'Edit Profil',
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(
+                            currentUser: currentUser)))),
             _Tile(
                 icon: Icons.notifications_outlined,
                 label: 'Notifikasi',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const NotificationsScreen(role: 'buyer')))),
             const SizedBox(height: 20),
             const Text('Lainnya',
                 style: TextStyle(
@@ -94,7 +112,14 @@ class BuyerProfileScreen extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5)),
             const SizedBox(height: 10),
-            _Tile(icon: Icons.help_outline, label: 'Bantuan', onTap: () {}),
+            _Tile(
+                icon: Icons.help_outline,
+                label: 'Bantuan',
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const HelpScreen(role: 'buyer')))),
             _Tile(
                 icon: Icons.logout,
                 label: 'Keluar',

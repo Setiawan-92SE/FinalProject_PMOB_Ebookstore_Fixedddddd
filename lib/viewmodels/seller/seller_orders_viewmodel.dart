@@ -42,12 +42,17 @@ class SellerOrdersViewModel extends ChangeNotifier {
       _filtered = List.from(_allOrders);
       return;
     }
-    final statusMap = {1: 'pending', 2: 'diproses', 3: 'selesai', 4: 'dibatalkan'};
+    final statusMap = {1: 'pending', 2: 'dikonfirmasi', 3: 'selesai', 4: 'dibatalkan'};
     _filtered = _allOrders.where((o) => o['status'] == statusMap[_filterIdx]).toList();
   }
 
   Future<void> updateStatus(int orderId, String status) async {
     await _orderRepo.updateStatus(orderId, status);
+    await load();
+  }
+
+  Future<void> updatePaymentStatus(int orderId, String paymentStatus) async {
+    await _orderRepo.updatePaymentStatus(orderId, paymentStatus);
     await load();
   }
 }

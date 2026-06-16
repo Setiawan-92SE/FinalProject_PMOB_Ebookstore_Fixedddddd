@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../welcome_screen.dart';
+import '../shared/edit_profile_screen.dart';
+import '../shared/notifications_screen.dart';
+import '../shared/help_screen.dart';
+import '../shared/about_app_screen.dart';
+import 'store_info_screen.dart';
+import 'bank_account_screen.dart';
 
 /// SellerProfileScreen — Profil Seller
 /// Path: lib/screens/seller/seller_profile_screen.dart
@@ -105,27 +111,56 @@ class SellerProfileScreen extends StatelessWidget {
             const _Lbl('Pengaturan Toko'),
             const SizedBox(height: 10),
             _Tile(
-                icon: Icons.person_outline, label: 'Edit Profil', onTap: () {}),
+                icon: Icons.person_outline,
+                label: 'Edit Profil',
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(
+                            currentUser: currentUser)))),
             _Tile(
                 icon: Icons.storefront_outlined,
                 label: 'Informasi Toko',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => StoreInfoScreen(
+                            currentUser: currentUser)))),
             _Tile(
                 icon: Icons.account_balance_outlined,
                 label: 'Rekening Bank',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => BankAccountScreen(
+                            currentUser: currentUser)))),
             _Tile(
                 icon: Icons.notifications_outlined,
                 label: 'Notifikasi',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(
+                            role: 'seller')))),
             const SizedBox(height: 20),
             const _Lbl('Lainnya'),
             const SizedBox(height: 10),
-            _Tile(icon: Icons.help_outline, label: 'Bantuan', onTap: () {}),
+            _Tile(
+                icon: Icons.help_outline,
+                label: 'Bantuan',
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const HelpScreen(role: 'seller')))),
             _Tile(
                 icon: Icons.info_outline,
                 label: 'Tentang Aplikasi',
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const AboutAppScreen(role: 'seller')))),
             const SizedBox(height: 8),
             _Tile(
                 icon: Icons.logout,

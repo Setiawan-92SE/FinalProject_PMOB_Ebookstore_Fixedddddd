@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:responsive_framework/responsive_framework.dart';
-import 'screens/welcome_screen.dart';
+import 'screens/start_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +45,7 @@ class EBookStoreApp extends StatelessWidget {
         ),
         home: child,
       ),
-      child: const WelcomeScreen(),
+      child: const StartScreen(),
     );
   }
 }
