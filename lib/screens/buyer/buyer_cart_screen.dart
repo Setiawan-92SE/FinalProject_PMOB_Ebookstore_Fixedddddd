@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../viewmodels/buyer/buyer_cart_viewmodel.dart';
+import 'buyer_orders_screen.dart';
 
 class BuyerCartScreen extends StatefulWidget {
   final User currentUser;
@@ -99,6 +100,15 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                     },
                     child: const Text('Kosongkan',
                         style: TextStyle(color: Colors.red, fontSize: 13))),
+              TextButton(
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => BuyerOrdersScreen(
+                              currentUser: widget.currentUser))),
+                  child: const Text('Riwayat',
+                      style:
+                          TextStyle(color: Color(0xFFB8973A), fontSize: 13))),
             ])),
         Expanded(
             child: _viewModel.loading

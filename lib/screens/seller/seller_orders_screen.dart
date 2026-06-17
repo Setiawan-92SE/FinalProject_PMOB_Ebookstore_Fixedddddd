@@ -50,62 +50,75 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     final qty = order['qty'] as int;
     final bookHarga = (order['book_harga'] as num?)?.toDouble() ?? 0;
     final paymentStatus = order['payment_status'] as String? ?? 'belum_bayar';
+    final paymentMethod = order['payment_method'] as String?;
+    final paymentAccount = order['payment_account'] as String?;
 
     showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF1A1A1A),
-              insetPadding: const EdgeInsets.all(20),
-              contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Row(children: [
-                const Icon(Icons.receipt, color: Color(0xFFB8973A), size: 22),
-                const SizedBox(width: 8),
-                Text('ORD-${order['id']}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700)),
-              ]),
-              content: Column(mainAxisSize: MainAxisSize.min, children: [
-                _detailRow('Status',
-                    '${(order["status"] ?? "").toString().toUpperCase()}'),
-                const Divider(
-                    color: Color(0xFFB8973A), height: 20, thickness: 0.3),
-                _detailRow('Pembeli', order['buyer_name'] ?? '-'),
-                _detailRow('Email', order['buyer_email'] ?? '-'),
-                _detailRow('Telepon', order['buyer_phone'] ?? '-'),
-                const Divider(
-                    color: Color(0xFFB8973A), height: 20, thickness: 0.3),
-                _detailRow('Buku', order['book_judul'] ?? '-'),
-                _detailRow('Penulis', order['book_penulis'] ?? '-'),
-                _detailRow('Harga Satuan', 'Rp ${_fmt(bookHarga.toInt())}'),
-                _detailRow('Jumlah', '$qty'),
-                _detailRow('Total', 'Rp ${_fmt(total.toInt())}',
-                    isBold: true),
-                const Divider(
-                    color: Color(0xFFB8973A), height: 20, thickness: 0.3),
-                _detailRow(
-                  'Status Pembayaran',
-                  paymentStatus == 'lunas' ? 'Lunas' : 'Belum Dibayar',
-                  valueColor: paymentStatus == 'lunas'
-                      ? Colors.green
-                      : Colors.orange,
-                ),
-                const SizedBox(height: 8),
-                Text('Pesanan: ${_fmtDate(order["created_at"] ?? "")}',
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        fontSize: 11)),
-              ]),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Tutup',
-                        style: TextStyle(color: Color(0xFFB8973A)))),
-              ],
-            ));
+        builder: (ctx) {
+      final screen = MediaQuery.of(ctx);
+      final hPad = screen.size.width > 600 ? 40.0 : 20.0;
+      return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          insetPadding: EdgeInsets.symmetric(horizontal: hPad, vertical: 20),
+          contentPadding: EdgeInsets.fromLTRB(
+              24, 20, 24, 12 + screen.viewInsets.bottom),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            const Icon(Icons.receipt, color: Color(0xFFB8973A), size: 22),
+            const SizedBox(width: 8),
+            Text('ORD-${order['id']}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          content: SingleChildScrollView(
+              child: Column(
+                  mainAxisSize: MainAxisSize.min, children: [
+            _detailRow('Status',
+                '${(order["status"] ?? "").toString().toUpperCase()}'),
+            const Divider(
+                color: Color(0xFFB8973A), height: 20, thickness: 0.3),
+            _detailRow('Pembeli', order['buyer_name'] ?? '-'),
+            _detailRow('Email', order['buyer_email'] ?? '-'),
+            _detailRow('Telepon', order['buyer_phone'] ?? '-'),
+            const Divider(
+                color: Color(0xFFB8973A), height: 20, thickness: 0.3),
+            _detailRow('Buku', order['book_judul'] ?? '-'),
+            _detailRow('Penulis', order['book_penulis'] ?? '-'),
+            _detailRow('Harga Satuan', 'Rp ${_fmt(bookHarga.toInt())}'),
+            _detailRow('Jumlah', '$qty'),
+            _detailRow('Total', 'Rp ${_fmt(total.toInt())}',
+                isBold: true),
+            const Divider(
+                color: Color(0xFFB8973A), height: 20, thickness: 0.3),
+            _detailRow(
+              'Status Pembayaran',
+              paymentStatus == 'lunas' ? 'Lunas' : 'Belum Dibayar',
+              valueColor: paymentStatus == 'lunas'
+                  ? Colors.green
+                  : Colors.orange,
+            ),
+            if (paymentMethod != null && paymentStatus == 'lunas') ...[
+              _detailRow('Metode', paymentMethod),
+              if (paymentAccount != null && paymentAccount.isNotEmpty)
+                _detailRow('Akun', paymentAccount),
+            ],
+            const SizedBox(height: 8),
+            Text('Pesanan: ${_fmtDate(order["created_at"] ?? "")}',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    fontSize: 11)),
+          ])),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Tutup',
+                    style: TextStyle(color: Color(0xFFB8973A)))),
+          ]);
+    });
   }
 
   Widget _detailRow(String label, String value,
@@ -356,6 +369,13 @@ class _OrderCard extends StatelessWidget {
                       ? Colors.green
                       : Colors.orange,
                 ),
+                if (paymentStatus == 'lunas' && order['payment_method'] != null) ...[
+                  const SizedBox(width: 8),
+                  _PaymentBadge(
+                    label: order['payment_method'] as String,
+                    color: const Color(0xFFB8973A),
+                  ),
+                ],
                 const Spacer(),
               ]),
               const SizedBox(height: 6),

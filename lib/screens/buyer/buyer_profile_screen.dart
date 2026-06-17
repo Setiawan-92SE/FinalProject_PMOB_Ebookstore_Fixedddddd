@@ -6,10 +6,45 @@ import 'buyer_orders_screen.dart';
 import '../shared/edit_profile_screen.dart';
 import '../shared/notifications_screen.dart';
 import '../shared/help_screen.dart';
+import '../../viewmodels/shared/notification_viewmodel.dart';
 
-class BuyerProfileScreen extends StatelessWidget {
+class BuyerProfileScreen extends StatefulWidget {
   final User currentUser;
   const BuyerProfileScreen({super.key, required this.currentUser});
+
+  @override
+  State<BuyerProfileScreen> createState() => _BuyerProfileScreenState();
+}
+
+class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
+  final _notifViewModel = NotificationViewModel();
+  int _unreadCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifViewModel.addListener(_onNotifChanged);
+    _loadNotifCount();
+  }
+
+  void _onNotifChanged() {
+    if (mounted) {
+      setState(() {
+        _unreadCount = _notifViewModel.unreadCount;
+      });
+    }
+  }
+
+  Future<void> _loadNotifCount() async {
+    await _notifViewModel.load(widget.currentUser.id!);
+  }
+
+  @override
+  void dispose() {
+    _notifViewModel.removeListener(_onNotifChanged);
+    _notifViewModel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +73,13 @@ class BuyerProfileScreen extends StatelessWidget {
                   child: const Icon(Icons.person,
                       color: Color(0xFFB8973A), size: 44)),
               const SizedBox(height: 12),
-              Text(currentUser.nama,
+              Text(widget.currentUser.nama,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text(currentUser.email,
+              Text(widget.currentUser.email,
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 13)),
@@ -78,16 +113,16 @@ class BuyerProfileScreen extends StatelessWidget {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) =>
-                            BuyerWishlistScreen(currentUser: currentUser)))),
+                        builder: (_) => BuyerWishlistScreen(
+                            currentUser: widget.currentUser)))),
             _Tile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Riwayat Pesanan',
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) =>
-                            BuyerOrdersScreen(currentUser: currentUser)))),
+                        builder: (_) => BuyerOrdersScreen(
+                            currentUser: widget.currentUser)))),
             _Tile(
                 icon: Icons.person_outline,
                 label: 'Edit Profil',
@@ -95,15 +130,19 @@ class BuyerProfileScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (_) => EditProfileScreen(
-                            currentUser: currentUser)))),
+                            currentUser: widget.currentUser)))),
             _Tile(
                 icon: Icons.notifications_outlined,
                 label: 'Notifikasi',
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            const NotificationsScreen(role: 'buyer')))),
+                badgeCount: _unreadCount,
+                onTap: () async {
+                  await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => NotificationsScreen(
+                              currentUser: widget.currentUser)));
+                  _loadNotifCount();
+                }),
             const SizedBox(height: 20),
             const Text('Lainnya',
                 style: TextStyle(
@@ -138,7 +177,8 @@ class BuyerProfileScreen extends StatelessWidget {
                               TextButton(
                                   onPressed: () => Navigator.pop(ctx),
                                   child: const Text('Batal',
-                                      style: TextStyle(color: Colors.white54))),
+                                      style:
+                                          TextStyle(color: Colors.white54))),
                               ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
@@ -147,12 +187,13 @@ class BuyerProfileScreen extends StatelessWidget {
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8))),
-                                  onPressed: () => Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const WelcomeScreen()),
-                                      (_) => false),
+                                  onPressed: () =>
+                                      Navigator.pushAndRemoveUntil(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const WelcomeScreen()),
+                                          (_) => false),
                                   child: const Text('Keluar')),
                             ]))),
           ])),
@@ -167,13 +208,15 @@ class _Tile extends StatelessWidget {
   final Color iconColor;
   final Color labelColor;
   final bool showArrow;
+  final int badgeCount;
   const _Tile(
       {required this.icon,
       required this.label,
       required this.onTap,
       this.iconColor = const Color(0xFFB8973A),
       this.labelColor = Colors.white,
-      this.showArrow = true});
+      this.showArrow = true,
+      this.badgeCount = 0});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -190,16 +233,31 @@ class _Tile extends StatelessWidget {
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color:
-                              const Color(0xFFB8973A).withValues(alpha: 0.1))),
+                          color: const Color(0xFFB8973A)
+                              .withValues(alpha: 0.1))),
                   child: Row(children: [
                     Icon(icon, color: iconColor, size: 20),
                     const SizedBox(width: 14),
                     Expanded(
                         child: Text(label,
-                            style: TextStyle(color: labelColor, fontSize: 15))),
+                            style: TextStyle(
+                                color: labelColor, fontSize: 15))),
+                    if (badgeCount > 0)
+                      Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFB8973A),
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Text('$badgeCount',
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700))),
                     if (showArrow)
                       Icon(Icons.arrow_forward_ios,
-                          color: Colors.white.withValues(alpha: 0.2), size: 14),
+                          color: Colors.white.withValues(alpha: 0.2),
+                          size: 14),
                   ])))));
 }

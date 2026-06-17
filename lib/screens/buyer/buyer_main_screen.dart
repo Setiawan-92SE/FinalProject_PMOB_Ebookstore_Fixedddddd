@@ -19,6 +19,7 @@ class BuyerMainScreen extends StatefulWidget {
 class _BuyerMainScreenState extends State<BuyerMainScreen> {
   int _idx = 0;
   int _cartRefreshKey = 0;
+  int _profileRefreshKey = 0;
 
   late List<Widget> _screens;
 
@@ -40,7 +41,9 @@ class _BuyerMainScreenState extends State<BuyerMainScreen> {
       BuyerCartScreen(
           key: ValueKey('cart_$_cartRefreshKey'),
           currentUser: widget.currentUser),
-      BuyerProfileScreen(currentUser: widget.currentUser),
+      BuyerProfileScreen(
+          key: ValueKey('profile_$_profileRefreshKey'),
+          currentUser: widget.currentUser),
     ];
   }
 
@@ -56,6 +59,10 @@ class _BuyerMainScreenState extends State<BuyerMainScreen> {
           setState(() {
             if (i == 2) {
               _cartRefreshKey++;
+              _buildScreens();
+            }
+            if (i == 3) {
+              _profileRefreshKey++;
               _buildScreens();
             }
             _idx = i;

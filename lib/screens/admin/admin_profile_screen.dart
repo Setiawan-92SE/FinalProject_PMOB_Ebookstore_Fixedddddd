@@ -135,7 +135,7 @@ class AdminProfileScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (_) =>
-                            const NotificationsScreen(role: 'admin')))),
+                            NotificationsScreen(currentUser: currentUser)))),
             const SizedBox(height: 20),
 
             const _MenuHeader('Lainnya'),

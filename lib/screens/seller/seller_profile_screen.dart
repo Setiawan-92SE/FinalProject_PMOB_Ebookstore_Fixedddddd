@@ -140,8 +140,8 @@ class SellerProfileScreen extends StatelessWidget {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const NotificationsScreen(
-                            role: 'seller')))),
+                        builder: (_) => NotificationsScreen(
+                             currentUser: currentUser)))),
             const SizedBox(height: 20),
             const _Lbl('Lainnya'),
             const SizedBox(height: 10),

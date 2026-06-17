@@ -41,131 +41,137 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> {
 
     showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF1A1A1A),
-              insetPadding: const EdgeInsets.all(20),
-              contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: const Row(children: [
-                Icon(Icons.payment, color: Color(0xFFB8973A), size: 22),
-                SizedBox(width: 8),
-                Text('Pembayaran',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700)),
-              ]),
-              content: Form(
-                  key: formKey,
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('Metode Pembayaran',
-                            style: TextStyle(
-                                color: Colors.white70, fontSize: 13))),
-                    const SizedBox(height: 6),
-                    ValueListenableBuilder<String>(
-                        valueListenable: paymentMethod,
-                        builder: (_, pm, __) => Row(children: [
-                              Expanded(
-                                  child: _MethodChip(
-                                      label: 'M-Banking',
-                                      selected: pm == 'M-Banking',
-                                      onTap: () =>
-                                          paymentMethod.value = 'M-Banking')),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: _MethodChip(
-                                      label: 'E-Wallet',
-                                      selected: pm == 'E-Wallet',
-                                      onTap: () =>
-                                          paymentMethod.value = 'E-Wallet')),
-                            ])),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                        controller: accountCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Nomor ${paymentMethod.value}',
-                          labelStyle:
-                              const TextStyle(color: Colors.white38),
-                          filled: true,
-                          fillColor: const Color(0xFF0F0F0F),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFB8973A))),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: const Color(0xFFB8973A)
-                                      .withValues(alpha: 0.3))),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFB8973A))),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? 'Masukkan nomor' : null),
-                    const SizedBox(height: 12),
-                    Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                            color: const Color(0xFF0F0F0F),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: const Color(0xFFB8973A)
-                                    .withValues(alpha: 0.3))),
-                        child: Row(children: [
-                          const Icon(Icons.receipt_long,
-                              color: Color(0xFFB8973A), size: 18),
+        builder: (ctx) {
+      final screen = MediaQuery.of(ctx);
+      final hPad = screen.size.width > 600 ? 40.0 : 20.0;
+      return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          insetPadding: EdgeInsets.symmetric(horizontal: hPad, vertical: 20),
+          contentPadding: EdgeInsets.fromLTRB(
+              24, 20, 24, 12 + screen.viewInsets.bottom),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: const Row(children: [
+            Icon(Icons.payment, color: Color(0xFFB8973A), size: 22),
+            SizedBox(width: 8),
+            Text('Pembayaran',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                  child: Column(
+                      mainAxisSize: MainAxisSize.min, children: [
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Metode Pembayaran',
+                        style: TextStyle(
+                            color: Colors.white70, fontSize: 13))),
+                const SizedBox(height: 6),
+                ValueListenableBuilder<String>(
+                    valueListenable: paymentMethod,
+                    builder: (_, pm, __) => Row(children: [
+                          Expanded(
+                              child: _MethodChip(
+                                  label: 'M-Banking',
+                                  selected: pm == 'M-Banking',
+                                  onTap: () =>
+                                      paymentMethod.value = 'M-Banking')),
                           const SizedBox(width: 8),
-                          const Text('Total Pembayaran',
-                              style: TextStyle(
-                                  color: Colors.white60, fontSize: 13)),
-                          const Spacer(),
-                          Text('Rp ${_fmt(total.toInt())}',
-                              style: const TextStyle(
-                                  color: Color(0xFFB8973A),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700)),
+                          Expanded(
+                              child: _MethodChip(
+                                  label: 'E-Wallet',
+                                  selected: pm == 'E-Wallet',
+                                  onTap: () =>
+                                      paymentMethod.value = 'E-Wallet')),
                         ])),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                        controller: pinCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        obscureText: true,
-                        maxLength: 6,
-                        decoration: InputDecoration(
-                          labelText: 'PIN',
-                          labelStyle:
-                              const TextStyle(color: Colors.white38),
-                          filled: true,
-                          fillColor: const Color(0xFF0F0F0F),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFB8973A))),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: const Color(0xFFB8973A)
-                                      .withValues(alpha: 0.3))),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFB8973A))),
-                          counterStyle:
-                              const TextStyle(color: Colors.white38),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => (v == null || v.length < 4)
-                            ? 'PIN minimal 4 digit'
-                            : null),
-                  ])),
-              actions: [
+                const SizedBox(height: 14),
+                TextFormField(
+                    controller: accountCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Nomor ${paymentMethod.value}',
+                      labelStyle:
+                          const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: const Color(0xFF0F0F0F),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFB8973A))),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                              color: const Color(0xFFB8973A)
+                                  .withValues(alpha: 0.3))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFB8973A))),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Masukkan nomor' : null),
+                const SizedBox(height: 12),
+                Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF0F0F0F),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: const Color(0xFFB8973A)
+                                .withValues(alpha: 0.3))),
+                    child: Row(children: [
+                      const Icon(Icons.receipt_long,
+                          color: Color(0xFFB8973A), size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Total Pembayaran',
+                          style: TextStyle(
+                              color: Colors.white60, fontSize: 13)),
+                      const Spacer(),
+                      Text('Rp ${_fmt(total.toInt())}',
+                          style: const TextStyle(
+                              color: Color(0xFFB8973A),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700)),
+                    ])),
+                const SizedBox(height: 12),
+                TextFormField(
+                    controller: pinCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    obscureText: true,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      labelText: 'PIN',
+                      labelStyle:
+                          const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: const Color(0xFF0F0F0F),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFB8973A))),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                              color: const Color(0xFFB8973A)
+                                  .withValues(alpha: 0.3))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFB8973A))),
+                      counterStyle:
+                          const TextStyle(color: Colors.white38),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => (v == null || v.length < 4)
+                        ? 'PIN minimal 4 digit'
+                        : null),
+              ]))),
+          actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text('Batal',
@@ -180,7 +186,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> {
                     onPressed: () async {
                       if (!formKey.currentState!.validate()) return;
                       await _viewModel.payOrder(
-                          orderId, accountCtrl.text, pinCtrl.text);
+                          orderId, paymentMethod.value, accountCtrl.text, pinCtrl.text);
                       await _viewModel.refresh(widget.currentUser.id!);
                       if (!ctx.mounted) return;
                       Navigator.pop(ctx);
@@ -194,7 +200,8 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> {
                     },
                     child: const Text('Bayar')),
               ],
-            ));
+            );
+    });
   }
 
   String _fmt(int v) {

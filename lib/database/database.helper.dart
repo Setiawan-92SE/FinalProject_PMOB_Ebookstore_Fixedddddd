@@ -13,7 +13,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'ebookstore.db';
-  static const int _dbVersion = 5;
+  static const int _dbVersion = 7;
 
   // Tables
   static const String tableBooks = 'books';
@@ -22,6 +22,7 @@ class DatabaseHelper {
   static const String tableWishlist = 'wishlist';
   static const String tableCart = 'cart';
   static const String tableOrders = 'orders';
+  static const String tableNotifications = 'notifications';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -44,18 +45,33 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int old, int nv) async {
-    for (final t in [
-      tableOrders,
-      tableCart,
-      tableWishlist,
-      tableBooks,
-      tableUsers,
-      tableCategories
-    ]) {
-      await db.execute('DROP TABLE IF EXISTS $t');
+    for (int v = old; v < nv; v++) {
+      if (v < 6) {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $tableNotifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'info',
+            related_order_id INTEGER,
+            is_read INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES $tableUsers(id)
+              ON DELETE CASCADE ON UPDATE CASCADE
+          )''');
+      }
+      if (v < 7) {
+        try {
+          await db.execute(
+              'ALTER TABLE $tableOrders ADD COLUMN payment_method TEXT');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'ALTER TABLE $tableOrders ADD COLUMN payment_account TEXT');
+        } catch (_) {}
+      }
     }
-    await _createAllTables(db);
-    await _insertSeedData(db);
   }
 
   Future<void> _createAllTables(Database db) async {
@@ -101,11 +117,24 @@ class DatabaseHelper {
       book_id INTEGER NOT NULL, qty INTEGER NOT NULL DEFAULT 1,
       total REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending',
       payment_status TEXT NOT NULL DEFAULT 'belum_bayar',
+      payment_method TEXT, payment_account TEXT,
       created_at TEXT NOT NULL,
       FOREIGN KEY (buyer_id) REFERENCES $tableUsers(id)
         ON DELETE RESTRICT ON UPDATE CASCADE,
       FOREIGN KEY (book_id) REFERENCES $tableBooks(id)
         ON DELETE RESTRICT ON UPDATE CASCADE)''');
+
+    await db.execute('''CREATE TABLE $tableNotifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'info',
+      related_order_id INTEGER,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES $tableUsers(id)
+        ON DELETE CASCADE ON UPDATE CASCADE)''');
   }
 
   Future<void> _insertSeedData(Database db) async {
@@ -502,16 +531,24 @@ class DatabaseHelper {
         where: 'id = ?', whereArgs: [orderId]);
   }
 
-  Future<int> updatePaymentAndStatus(int orderId, String paymentStatus, String status) async {
+  Future<int> updatePaymentAndStatus(int orderId, String paymentStatus, String status,
+      {String? paymentMethod, String? paymentAccount}) async {
     final db = await database;
-    return await db.update(tableOrders, {'payment_status': paymentStatus, 'status': status},
+    final values = <String, dynamic>{
+      'payment_status': paymentStatus,
+      'status': status,
+    };
+    if (paymentMethod != null) values['payment_method'] = paymentMethod;
+    if (paymentAccount != null) values['payment_account'] = paymentAccount;
+    return await db.update(tableOrders, values,
         where: 'id = ?', whereArgs: [orderId]);
   }
 
   Future<List<Map<String, dynamic>>> getOrdersByBuyer(int buyerId) async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT o.*, b.judul as book_judul, b.harga as book_harga, b.penulis as book_penulis
+      SELECT o.*, b.judul as book_judul, b.harga as book_harga, b.penulis as book_penulis,
+             b.seller_id as seller_id
       FROM $tableOrders o
       INNER JOIN $tableBooks b ON o.book_id = b.id
       WHERE o.buyer_id = ? ORDER BY o.created_at DESC''', [buyerId]);
@@ -544,6 +581,49 @@ class DatabaseHelper {
       INNER JOIN $tableUsers u ON o.buyer_id = u.id
       ORDER BY o.created_at DESC
       LIMIT $limit''');
+  }
+
+  // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
+  Future<int> createNotification(int userId, String title, String message,
+      {String type = 'info', int? relatedOrderId}) async {
+    final db = await database;
+    return await db.insert(tableNotifications, {
+      'user_id': userId,
+      'title': title,
+      'message': message,
+      'type': type,
+      'related_order_id': relatedOrderId,
+      'is_read': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getNotifications(int userId) async {
+    final db = await database;
+    return await db.query(tableNotifications,
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'created_at DESC');
+  }
+
+  Future<int> getUnreadNotificationCount(int userId) async {
+    final db = await database;
+    final r = await db.rawQuery(
+        'SELECT COUNT(*) as t FROM $tableNotifications WHERE user_id = ? AND is_read = 0',
+        [userId]);
+    return Sqflite.firstIntValue(r) ?? 0;
+  }
+
+  Future<int> markNotificationRead(int notificationId) async {
+    final db = await database;
+    return await db.update(tableNotifications, {'is_read': 1},
+        where: 'id = ?', whereArgs: [notificationId]);
+  }
+
+  Future<int> markAllNotificationsRead(int userId) async {
+    final db = await database;
+    return await db.update(tableNotifications, {'is_read': 1},
+        where: 'user_id = ? AND is_read = 0', whereArgs: [userId]);
   }
 
   // ── ANALYTICS ─────────────────────────────────────────────────────────────
